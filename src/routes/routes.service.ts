@@ -11,50 +11,61 @@ export class RoutesService {
     private directionsService: DirectionsService,
   ) {}
 
-  create(createRouteDto: CreateRouteDto) {
+  async create(createRouteDto: CreateRouteDto) {
+    console.log(createRouteDto);
     const { available_travel_modes, geocoded_waypoints, routes, request } =
-      this.directionsService.getDirections(
+      await this.directionsService.getDirections(
         createRouteDto.source_id,
         createRouteDto.destination_id,
       );
-    this.prismaService.route.create({
+
+    const legs = routes[0].legs[0];
+    return this.prismaService.route.create({
       data: {
         name: createRouteDto.name,
         source: {
-          name: '',
+          name: legs.start_address,
           location: {
-            lat: 0,
-            lng: 0,
+            lat: legs.start_location.lat,
+            lng: legs.start_location.lng,
           },
         },
         destination: {
-          name: '',
+          name: legs.end_address,
           location: {
-            lat: 0,
-            lng: 0,
+            lat: legs.end_location.lat,
+            lng: legs.end_location.lng,
           },
         },
-        duration: 0,
-        distance: 0,
-        directions: {},
+        duration: legs.duration.value,
+        distance: legs.distance.value,
+        directions: JSON.parse(
+          JSON.stringify({
+            available_travel_modes,
+            geocoded_waypoints,
+            routes,
+            request,
+          }),
+        ),
       },
     });
-    return 'This action adds a new route';
   }
 
   findAll() {
-    return `This action returns all routes`;
+    return this.prismaService.route.findMany();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} route`;
+  findOne(id: string) {
+    return this.prismaService.route.findFirstOrThrow({
+      where: { id },
+    });
   }
 
-  update(id: number, updateRouteDto: UpdateRouteDto) {
-    return `This action updates a #${id} route`;
-  }
+  // update(id: number, updateRouteDto: UpdateRouteDto) {
+  //   return `This action updates a #${id} route`;
+  // }
 
-  remove(id: number) {
-    return `This action removes a #${id} route`;
-  }
+  // remove(id: number) {
+  //   return `This action removes a #${id} route`;
+  // }
 }
